@@ -15,7 +15,7 @@ or
 or
 `./webapibenchmark.sh`
 ### Open Benchmarks tool
-Webbrowser input url`http://[host:9090]`
+Webbrowser enter `http://[host:9090]`
 ### change listen port
 edit `HttpConfig.json`
 ```
