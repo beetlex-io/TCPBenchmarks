@@ -1,4 +1,4 @@
-# TCPBenchmarks
+# TCP Benchmarks
 fast tcp communication benchmarks tool
 ## Run Environment
 Dotnet Core 2.1 or later
