@@ -22,4 +22,7 @@ edit `HttpConfig.json`
     "Host": "",
     "Port": 9090,
 ```
-![](https://github.com/IKende/TCPBenchmarks/blob/master/ui.png?raw=true)
+## 100 connections
+![](https://github.com/IKende/TCPBenchmarks/blob/master/100c.png?raw=true)
+## 200k connections
+![](https://github.com/IKende/TCPBenchmarks/blob/master/200kc.png?raw=true)
