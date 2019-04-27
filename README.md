@@ -26,3 +26,5 @@ edit `HttpConfig.json`
 ![](https://github.com/IKende/TCPBenchmarks/blob/master/100c.png?raw=true)
 ## 200k connections
 ![](https://github.com/IKende/TCPBenchmarks/blob/master/200kc.png?raw=true)
+## 1m connectinos
+![](https://github.com/IKende/TCPBenchmarks/blob/master/beetlex_1mc.png?raw=true)
