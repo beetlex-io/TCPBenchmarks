@@ -1,0 +1,640 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+
+    <link href="/css/bootstrap.css" rel="stylesheet" />
+    <link href="/css/bootstrap-theme.css" rel="stylesheet" />
+    <link href="/css/site.css" rel="stylesheet" />
+    <script src="/js/jquery.js"></script>
+    <script src="/js/vue.js"></script>
+    <script src="/js/ModuleLoader.js"></script>
+    <script src="/js/FastHttpApi.js"></script>
+    <script src="/js/Monitor.js"></script>
+    <script src="/js/bootstrap.js"></script>
+    <script src="/js/Controller.js"></script>
+    <script src="/js/echarts.js"></script>
+    <script src="/js/ReadFileHandler.js"></script>
+    <title>BeetleX TCP Benchmarks</title>
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container" slot="header">
+
+        </div>
+    </div>
+    <div class="container bs-docs-container" style="padding-top:60px;">
+        <div class="row">
+            <div id="top_frame" style="height:100px;padding-bottom:10px;">
+                <a href="javascript:void(0)" onclick="$('#top_frame').hide()" style="position:absolute;z-index:3000;margin-left:-50px;" class="btn btn-sm">
+                    <span class="label label-success">
+                        Close
+                    </span>
+                </a>
+                <iframe src="http://www.ikende.com/toppanel.html" style="border:none;overflow:no-display;width:100%;height:100%" scrolling="no"></iframe>
+            </div>
+            <div class="col-md-4 col">
+                <div class="c-panel" id="lstServer">
+                    <h3 class="c-panel-title">Servers</h3>
+                    <div class="tool-bar">
+                        <input type="text" style="width: 250px;" placeholder="tcp://host:port" v-model:value="Host" title="Server host" class="form-control input-sm" />
+                        <a href="javascript:void(0)" @click="add" style="margin-top:10px;" title="Add"><img src="/images/new.png" /></a>
+                    </div>
+                    <ul class="lst-server">
+                        <li v-for="(item,i) in Items" style="display:inline-block;padding:0px;">
+                            <input type="radio" :id="[i+'_radio']" name="selectServer" @change="select=item" />
+                            <label :for="[i+'_radio']" style="padding:0px;margin:0px;cursor:pointer;">tcp://{{item.Host}}:{{item.Port}}</label>
+                            <div class="tool-bar">
+                                <a href="javascript:void(0)" @click="del(item)" title="Delete"><img src="/images/delete.png" /></a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="c-panel" id="lstMessages">
+                    <h3 class="c-panel-title">Messages</h3>
+                    <div class="tool-bar">
+                        <a href="javascript:void(0)" style="margin-top:5px;" @click="create" title="New message"><img src="/images/new.png" /></a>
+                        <a href="javascript:void(0)" onclick=" $('#importFile').val('');$('#importFile').trigger('click');" class="leftspit" style="margin-top:5px;" title="Import"><img src="/images/import.png" /></a>
+                        <a href="/Download" style="margin-top:5px;" title="Export" target="_blank"><img src="/images/export.png" /></a>
+                        <input id="importFile" type="file" style="display:none" multiple />
+                    </div>
+                    <select title="Categories" @change="list" v-model:value="SelectCategory" class="form-control input-sm">
+                        <option value=""></option>
+                        <option v-for="item in Categories" @value="item.Key">{{item.Key}}</option>
+                    </select>
+                    <ul class="lst-cases">
+                        <li v-for="item in Items">
+                            <input type="checkbox" v-model:value="item.Selected" @change="categorySelect(item)" />
+                            <a href="javascript:void(0)" @click="item.Show=!item.Show" style="margin-top:-4px;">
+                                <img v-if="item.Show" src="/images/folder_open.png" />
+                                <img v-else src="/images/folder_close.png" />
+                                {{item.Key}}({{item.Items.length}})
+                            </a>
+                            <div class="tool-bar" style="padding:0px;display:inline">
+                                <a href="javascript:void(0)" @click="deleteCatgory(item.Key)" title="Delete this category"><img src="/images/delete.png" /></a>
+                            </div>
+                            <ul v-if="item.Show" class="lst-cases" style="padding-left:20px;">
+                                <li v-for="(c,i) in item.Items">
+                                    <input type="checkbox" v-model:value="c.Selected" />
+                                    <a href="javascript:void(0)" @click="selectItem(c)">
+
+                                        <span>
+                                            {{c.Name}}({{c.Type}})
+                                        </span>
+                                    </a>
+                                    <div class="tool-bar" style="padding:0px;display:inline">
+                                        <a href="javascript:void(0)" @click="deleteItem(c,item,i)" title="Delete message"><img src="/images/delete.png" /></a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Question?</h4>
+                    <a href="https://github.com/IKende/TCPBenchmarks/issues" target="_blank">https://github.com/IKende/TCPBenchmarks/issues</a>
+                    <h4>Donation(wechat)</h4>
+                    <img style="width:128px;" src="images/wx_pay.png" />
+
+                </div>
+                <div style="height:200px;">
+                    <iframe src="http://www.ikende.com/leftpanel.html" style="border:none;overflow:no-display;width:100%;height:100%" scrolling="no"></iframe>
+                </div>
+            </div>
+
+            <div class="col-md-8 col">
+                <div class="c-panel" id="benchmarksSetting">
+                    <h3 class="c-panel-title"><a href="javascript:void(0)" @click="Show=!Show">Test setting</a></h3>
+                    <div :style="{display:Show || RunDetail.Status=='Runing'?'':'none',padding:'10px'}">
+
+
+                        <form class="form-inline">
+                            <div class="form-group form-group-sm">
+
+                                <ul style="list-style:none;padding:0px;margin:0px;">
+                                    <li style="float:left;padding-right:10px;padding-left:32px;"><label>Local IP:</label></li>
+                                    <li v-for="(item,i) in IPAddress" style="float:left;padding-right:10px;">
+                                        <input :id="['ip_'+i]" type="checkbox" v-model:value="item.Selected" />
+                                        <label :for="['ip_'+i]" style="cursor:pointer"> {{item.IP}}</label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </form>
+
+                        <div style="clear:both;"></div>
+
+
+                        <form class="form-inline">
+                            <div class="form-group form-group-sm">
+                                <label>Connections:</label>
+                                <input v-model="Setting.Connection" type="number" min="1" max="10000000" style="width:100px;text-align:right" class="form-control input-group-sm">
+                            </div>
+                            <div class=" form-group form-group-sm">
+                                <label>Mode:</label>
+                                <select v-model="Setting.Mode" class="form-control input-group-sm">
+                                    <option value="Response">Response</option>
+                                    <option value="Interval">Interval</option>
+                                </select>
+                            </div>
+                            <div class=" form-group form-group-sm">
+                                <label>Interval Time:</label>
+                                <input v-model="Setting.Interval" type="number" min="50" max="10000000" style="width:80px;text-align:right" class="form-control input-group-sm">(ms)
+                            </div>
+                            <button @click="run" v-if="RunDetail.Status=='None'|| RunDetail.Status=='Closed' " type="button" class="btn btn-default btn-sm">Run</button>
+                            <button @click="stop" v-else type="button" class="btn btn-default btn-sm">Stop</button>
+                        </form>
+
+                        <hr style="padding:0px;margin:6px" />
+
+                        <div>
+                            <div v-if="RunDetail.Status" class="row">
+                                <p style="padding-left:16px;"><span class="label label-success">Status:{{RunDetail.Status}} Connections:{{RunDetail.Count}}</span></p>
+                                <div class="col-md-4 col">
+                                    <p><b> Details</b></p>
+                                    <div class="input-group input-group-sm" style="margin-bottom:6px;">
+                                        <span class="input-group-addon" style="min-width:100px;">Total</span>
+                                        <input type="text" class="form-control" :value="Statics.Count">
+                                    </div>
+                                    <div class="input-group input-group-sm" style="margin-bottom:6px;">
+                                        <span class="input-group-addon" style="min-width:100px;">Avg-rps</span>
+                                        <input type="text" class="form-control" :value="Statics.AvgRps">
+                                    </div>
+                                    <div class="input-group input-group-sm" style="margin-bottom:6px;">
+                                        <span class="input-group-addon" style="min-width:100px;">Max-rps</span>
+                                        <input type="text" class="form-control" :value="Statics.MaxRps">
+                                    </div>
+                                    <div class="input-group input-group-sm" style="margin-bottom:6px;">
+                                        <span class="input-group-addon" style="min-width:100px;">Send</span>
+                                        <input type="text" class="form-control" :value="Statics.SendIO">
+                                    </div>
+                                    <div class="input-group input-group-sm" style="margin-bottom:6px;">
+                                        <span class="input-group-addon" style="min-width:100px;">Send Bytes</span>
+                                        <input type="text" class="form-control" :value="(Statics.SendBytes/1024/1024).toFixed(2)+'(MB)'">
+                                    </div>
+                                    <div class="input-group input-group-sm" style="margin-bottom:6px;">
+                                        <span class="input-group-addon" style="min-width:100px;">Receive</span>
+                                        <input type="text" class="form-control" :value="Statics.ReceiveIO">
+                                    </div>
+                                    <div class="input-group input-group-sm" style="margin-bottom:6px;">
+                                        <span class="input-group-addon" style="min-width:100px;">Receive Bytes</span>
+                                        <input type="text" class="form-control" :value="(Statics.ReceiveBytes/1024/1024).toFixed(2)+'(MB)'">
+                                    </div>
+                                </div>
+                                <div class="col-md-8 col">
+                                    <p><b> Delay Summary</b></p>
+                                    <div id="allTimeChat" style="height: 240px;width:100%">
+
+                                    </div>
+                                </div>
+
+                            </div>
+                            <hr style="padding:0px;margin:6px" />
+                            <div style="width:100%;height:130px;padding:2px;display:inline-block;margin-top:10px;">
+                                <p><b> IO</b></p>
+                                <canvas width="800" height="140" id="ioMonitor" style="width:100%;height:100%;border-radius:4px;"></canvas>
+                            </div>
+                            <div style="width:100%;height:130px;padding:2px;display:inline-block;margin-top:10px;">
+                                <p><b> Bandwidth(MB)</b></p>
+                                <canvas width="800" height="140" id="bandwidthMonitor" style="width:100%;height:100%;border-radius:4px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="c-panel" id="messageEditor">
+                    <h3 class="c-panel-title"><a href="javascript:void(0)" @click="Show=!Show">Message editor</a></h3>
+                    <div :style="{display:Show?'':'none',padding:'10px'}">
+                        <form class="form-horizontal">
+                            <div class="form-group form-group-sm">
+                                <label class="col-sm-2 control-label">Name</label>
+                                <div class="col-sm-10">
+                                    <input v-model:value="Item.Name" type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group form-group-sm">
+                                <label class="col-sm-2 control-label">Category</label>
+                                <div class="input-group col-sm-5" style="padding-left:15px;padding-right:15px;">
+                                    <input type="text" v-model:value="Item.Category" class="form-control">
+                                    <div class="input-group-btn ">
+                                        <button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button>
+                                        <ul class="dropdown-menu dropdown-menu-right" style="padding:4px;">
+                                            <li v-for="item in Categories">
+                                                <a href="javascript:void(0)" @click="Item.Category=item.Key">{{item.Key}} </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group form-group-sm">
+                                <label class="col-sm-2 control-label">Type</label>
+                                <div class="col-sm-5">
+                                    <select v-model:value="Item.Type" class="form-control">
+                                        <option value="Utf8">Utf8</option>
+                                        <option value="Hex">Hex</option>
+
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group form-group-sm">
+                                <label class="col-sm-2 control-label">Data</label>
+                                <div class="col-sm-10">
+                                    <textarea v-model:value="Item.Data" class="form-control" rows="10"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group form-group-sm form-inline">
+                                <div class="col-sm-offset-2 col-sm-10">
+                                    <button type="button" @click="save" class="btn btn-default btn-sm">Save</button>
+                                    <button type="button" @click="test" class="btn btn-default btn-sm">Test</button>
+                                </div>
+                            </div>
+                            <div class="form-group form-group-sm">
+                                <div class="col-sm-offset-2 col-sm-10">
+                                    hex:
+                                    <pre>
+{{TestResult.hex}}
+</pre>
+                                    utf-8:
+                                    <pre>
+{{TestResult.utf8}}
+</pre>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+    </div>
+    <div class="navbar navbar-inverse navbar-fixed-bottom">
+        <div class="container" style="color:aliceblue;text-align:center;" slot="footer">
+        </div>
+    </div>
+
+    <script>
+        var banchmark = new Banchmark();
+        var _delayColors = ['#2B9B0C', '#20BC0F', '#36DB11', '#C2DD11', "#DB9E11", "#ED7C12", "#F25913", "#FF3F14", "#F71313", "#C91010", "#930000"];
+        var servers = new Vue({
+            el: '#lstServer',
+            data: {
+                Items: [],
+                Host: '',
+                select: null,
+
+            },
+            methods: {
+                list: function () {
+                    banchmark.ListServer().$(function (r) {
+                        this.Items = r.Data;
+                    }.bind(this));
+                },
+                add: function () {
+                    if (!this.Host) {
+                        alert('The service address cannot be empty!');
+                        return;
+                    }
+                    banchmark.AddServer(this.Host).$(function (r) {
+                        this.Host = '';
+                        this.list();
+                    }.bind(this));
+                },
+                del: function (item) {
+                    host = 'tcp://' + item.Host + ':' + item.Port;
+                    if (confirm('Want to delete ' + host)) {
+                        banchmark.DelServer(host).$(function (r) {
+                            this.list();
+                        }.bind(this));
+                    }
+                }
+            }
+        });
+        var messages = new Vue({
+            el: '#lstMessages',
+            data: { SelectCategory: '', Categories: [], Items: [] },
+            methods: {
+                list: function () {
+                    banchmark.ListMessages(this.SelectCategory).$(function (r) {
+                        this.Items = r.Data;
+                    }.bind(this));
+                },
+                create: function () {
+                    benchmarksSetting.Show = false;
+                    editor.create();
+                    editor.Show = true;
+                },
+                categorySelect: function (item) {
+                    item.Items.forEach(function (v) {
+                        v.Selected = item.Selected;
+                    });
+                },
+                selectMessages: function () {
+                    var items = [];
+                    this.Items.forEach(function (v) {
+                        v.Items.forEach(function (i) {
+                            if (i.Selected)
+                                items.push(i);
+                        });
+                    });
+                    return items;
+                },
+                selectItem: function (item) {
+                    benchmarksSetting.Show = false;
+                    editor.set(item);
+                    editor.Show = true;
+                },
+                test: function () {
+                    benchmarksSetting.Show = true;
+                    editor.Show = false;
+                },
+                listCategories: function () {
+                    banchmark.ListMessageCategories().$(function (r) {
+                        this.Categories = r.Data;
+                    }.bind(this))
+                },
+                deleteCatgory: function (key) {
+                    if (confirm('Want to delete category?'))
+                        banchmark.DeleteCategoryMessages(key).$(function (r) {
+                            this.list();
+                            editor.listCategories();
+                            this.listCategories();
+                        }.bind(this));
+                },
+                deleteItem: function (item) {
+                    if (confirm('Want to delete message?'))
+                        banchmark.DeleteMessage(item.ID).$(function (r) {
+                            this.list();
+                            editor.create();
+                        }.bind(this));
+                },
+            }
+        });
+        var editor = new Vue({
+            el: '#messageEditor',
+            data: {
+                Categories: [],
+                Item: {},
+                TestResult: '',
+                Show: true
+            },
+            methods: {
+                create: function () {
+                    this.TestResult = {};
+                    banchmark.NewMessage().$(function (r) {
+                        this.Item = r.Data;
+                    }.bind(this));
+                },
+                set: function (item) {
+                    this.TestResult = {};
+                    this.Item = item;
+                },
+                listCategories: function () {
+                    banchmark.ListMessageCategories().$(function (r) {
+                        this.Categories = r.Data;
+                    }.bind(this));
+                },
+                save: function () {
+                    if (!this.Item.Name) {
+                        alert('The message name cannot be empty!');
+                        return;
+                    }
+                    if (!this.Item.Category) {
+                        alert('The message category cannot be empty!');
+                        return;
+                    }
+                    if (!this.Item.Data) {
+                        alert('The message data cannot be empty!');
+                        return;
+                    }
+                    banchmark.SaveMessage(this.Item).$(function (r) {
+                        alert('Data save Completed');
+                        messages.list();
+                        messages.listCategories();
+                        this.listCategories();
+                    }.bind(this));
+                },
+                test: function () {
+                    this.TestResult = {};
+                    if (!servers.select) {
+                        alert('Select the server for the test!');
+                        return;
+                    }
+
+                    if (!this.Item.Data) {
+                        alert('The message data cannot be empty!');
+                        return;
+                    }
+                    banchmark.Test(this.Item, 'tcp://' + servers.select.Host + ':' + servers.select.Port).$(function (r) {
+                        this.TestResult = r.Data;
+                    }.bind(this))
+                },
+
+            }
+        });
+        var benchmarksSetting = new Vue({
+            el: '#benchmarksSetting',
+            data: {
+                IPAddress: [],
+                Show: false,
+                Setting: { Connection: 100, Mode: 'Response', Interval: 50 },
+                RunDetail: {},
+                Statics: {},
+                IOMonitor: {},
+                BandwithMonitor: {}
+
+            },
+            methods: {
+                getIP: function () {
+                    banchmark.GetLocalIPAddress().$(function (r) {
+                        this.IPAddress = r.Data;
+                    }.bind(this));
+                },
+
+                selectIPAddress: function () {
+                    var items = [];
+                    this.IPAddress.forEach(function (v) {
+                        if (v.Selected)
+                            items.push(v.IP);
+                    });
+                    return items;
+                },
+                detail: function () {
+                    banchmark.GetRunerDetail().$(function (r) {
+                        this.RunDetail = r.Data;
+                        if (r.Data.Status == "Runing" || r.Data.Status == "Init") {
+                            this.Setting = r.Data.Setting
+                        }
+                        if (r.Data.Status == "Runing") {
+                            this.Statics = r.Data.Statistics;
+                            this.IOMonitor.Send.push(r.Data.Statistics.SendIOPer);
+                            this.IOMonitor.Receive.push(r.Data.Statistics.ReceiveIOPer);
+                            this.IOMonitor.Monitor.draw();
+
+                            this.BandwithMonitor.Send.push((r.Data.Statistics.SendBytesPer / 1024 / 1024).toFixed(4));
+                            this.BandwithMonitor.Receive.push((r.Data.Statistics.ReceiveBytesPer / 1024 / 1024).toFixed(4));
+                            this.BandwithMonitor.Monitor.draw();
+
+                            try {
+                                r.Data.Delay.forEach(function (v) {
+                                    v.itemStyle = {
+                                        color: _delayColors[v.color],
+
+                                    };
+                                });
+                                var allTimeChat = echarts.init(document.getElementById("allTimeChat"));
+                                allTimeChat.setOption({
+                                    tooltip: {
+                                        trigger: 'item',
+                                        formatter: "{a} <br/>{b} : {c} ({d}%)"
+                                    },
+                                    label: {
+                                        formatter: '{b}:({d}%)'
+                                    },
+                                    series: [
+                                        {
+                                            name: '',
+                                            type: 'pie',
+                                            radius: [30, 70],
+                                            center: ['50%', '55%'],
+                                  
+                                            data: r.Data.Delay,
+                                            itemStyle: {
+                                                emphasis: {
+                                                    shadowBlur: 20,
+                                                    shadowOffsetX: 10,
+                                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }, true);
+                            }
+                            catch
+                            {
+
+                            }
+
+
+                        }
+                        setTimeout(this.detail, 1000);
+                    }.bind(this));
+                },
+                run: function () {
+                    var ips = this.selectIPAddress();
+                    var msgs = messages.selectMessages();
+                    if (!servers.select) {
+                        alert('Select the server for the test!');
+                        return;
+                    }
+                    if (ips.length == 0) {
+                        alert('Select the local ipaddress for the test!');
+                        return;
+                    }
+                    if (msgs.length == 0) {
+                        alert('Select the messages for the test!');
+                        return;
+                    }
+                    if (this.Setting.Connection < 1) {
+                        alert('Number of invalid connections!');
+                        return;
+                    }
+                    banchmark.Run(servers.select, ips, msgs, this.Setting).$(function (r) { });
+                    this.createMonitor();
+                },
+                stop: function () {
+                    banchmark.Stop().$(function (r) { });
+                },
+                createMonitor: function () {
+                    this.IOMonitor.Monitor = new Monitor("ioMonitor");
+                    this.IOMonitor.Monitor.xLen = 300;
+                    this.IOMonitor.Send = this.IOMonitor.Monitor.create("Send");
+                    this.IOMonitor.Send.maxValue = 500000;
+                    this.IOMonitor.Send.label = "Send";
+                    this.IOMonitor.Send.push(0);
+                    this.IOMonitor.Receive = this.IOMonitor.Monitor.create("Receive");
+                    this.IOMonitor.Receive.maxValue = 500000;
+                    this.IOMonitor.Receive.label = "Receive";
+                    this.IOMonitor.Receive.push(0);
+                    this.IOMonitor.Monitor.draw();
+
+
+                    this.BandwithMonitor.Monitor = new Monitor("bandwidthMonitor");
+                    this.BandwithMonitor.Monitor.xLen = 300;
+                    this.BandwithMonitor.Send = this.BandwithMonitor.Monitor.create("Send");
+                    this.BandwithMonitor.Send.maxValue = 1000;
+                    this.BandwithMonitor.Send.label = "Output";
+                    this.BandwithMonitor.Send.push(0);
+                    this.BandwithMonitor.Receive = this.BandwithMonitor.Monitor.create("Receive");
+                    this.BandwithMonitor.Receive.maxValue = 1000;
+                    this.BandwithMonitor.Receive.label = "Input";
+                    this.BandwithMonitor.Receive.push(0);
+                    this.BandwithMonitor.Monitor.draw();
+                },
+
+            }
+        })
+
+        $(document).ready(function () {
+            servers.list();
+            editor.create();
+            editor.listCategories();
+            messages.listCategories();
+            messages.list();
+            benchmarksSetting.getIP();
+
+            benchmarksSetting.createMonitor();
+            benchmarksSetting.detail();
+            bindUpload();
+        });
+        function uploadBlodk(result) {
+            //{ eof: _this.completed(), data: str, name: _this.name };
+            if (result.errCode) {
+                alert(result.error);
+                return;
+            }
+            banchmark.Upload(result.name, result.eof, result.data).$(function (r) {
+                if (result.eof) {
+                    alert("Import data success!");
+                    servers.list();
+                    editor.create();
+                    editor.listCategories();
+                    messages.listCategories();
+                    messages.list();
+                }
+                else {
+
+                    uploadFile.ready(uploadBlodk);
+                }
+            });
+        }
+        function bindUpload() {
+            $('#importFile').change(function (evt) {
+                var file = evt.target.files[0];
+                if (file.name.indexOf('.json') >= 0) {
+                    banchmark.GetFileID().$(function (r) {
+                        uploadFile = new readFileHandler(file);
+                        uploadFile.name = r.Data;
+                        uploadFile.read(uploadBlodk);
+                    });
+
+                }
+                else {
+                    alert('select json file!');
+                }
+
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>
