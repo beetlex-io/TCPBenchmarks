@@ -1,4 +1,9 @@
 # TCP服务测试工具
+
+### 国内地址
+
+https://gitee.com/ikende/TCPBenchmarks
+
 ### linux下使用
 ```
 sudo chmod 777 ./TCP-BenchmarkApp
